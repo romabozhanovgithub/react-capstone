@@ -1,5 +1,10 @@
 import { useState } from "react";
 
+import {
+    createAuthUserWithEmailAndPassword,
+    createUserDocumentFromAuth,
+} from "../../utils/firebase/firebase.utils";
+
 
 const formFields = {
     displayName: '',
@@ -13,6 +18,26 @@ const SignUpForm = () => {
     const [form, setForm] = useState(formFields);
     const { displayName, email, password, confirmPassword } = form;
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (password !== confirmPassword) {
+            alert("Passwords don't match");
+            return;
+        }
+
+        try {
+            const { user } = await createAuthUserWithEmailAndPassword(email, password);
+            await createUserDocumentFromAuth(user, { displayName }); // { displayName } is additionalData object, that will be stored in firestore
+            setForm(formFields);
+        } catch (error) {
+            if (error.code === 'auth/email-already-in-use') {
+                alert('That email address is already in use!');
+            }
+            console.error(error);
+        }
+    }
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setForm({ ...form, [name]: value }); // [name] is a computed property name, it will be the value of name variable
@@ -21,7 +46,7 @@ const SignUpForm = () => {
     return (
         <div>
             <h1>Sign up With your email and password</h1>
-            <form onSubmit={() => {}}>
+            <form onSubmit={handleSubmit}>
                 <label htmlFor="displayName">Display Name</label>
                 <input
                     type="text"
